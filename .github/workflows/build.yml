@@ -1,0 +1,128 @@
+name: Compilación automática Python
+
+# Configuración del trigger: se ejecuta en push a la rama main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Definición de trabajos
+jobs:
+  # Trabajo de compilación y pruebas
+  build:
+    # Ejecutar en la última versión de Ubuntu
+    runs-on: ubuntu-latest
+    
+    # Estrategia de matriz para probar múltiples versiones de Python
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+    
+    steps:
+    # Paso 1: Clonar el repositorio
+    - name: Clonar el repositorio
+      uses: actions/checkout@v4
+    
+    # Paso 2: Configurar Python
+    - name: Configurar Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    # Paso 3: Cachear dependencias para acelerar builds
+    - name: Cachear dependencias pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    # Paso 4: Instalar dependencias
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    # Paso 5: Verificar sintaxis del código
+    - name: Verificar sintaxis del código
+      run: |
+        python -m py_compile main.py
+        python -m py_compile test_main.py
+    
+    # Paso 6: Ejecutar pruebas unitarias
+    - name: Ejecutar pruebas unitarias
+      run: |
+        python -m pytest test_main.py -v
+    
+    # Paso 7: Ejecutar el programa principal (modo no interactivo)
+    - name: Ejecutar programa principal
+      run: |
+        echo "Alex" | python main.py
+    
+    # Paso 8: Verificar que el programa se ejecuta sin errores
+    - name: Verificar ejecución exitosa
+      run: |
+        python -c "
+        import main
+        print('Importación exitosa del módulo main')
+        print('Función saludar:', main.saludar('GitHub Actions'))
+        print('Función calcular_suma:', main.calcular_suma(5, 3))
+        "
+    
+    # Paso 9: Generar reporte de cobertura (opcional)
+    - name: Generar reporte de cobertura
+      run: |
+        pip install coverage
+        coverage run -m pytest test_main.py
+        coverage report -m
+    
+    # Paso 10: Subir reportes de cobertura (opcional)
+    - name: Subir reporte de cobertura a Codecov
+      if: matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # Trabajo adicional para verificar la calidad del código
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clonar el repositorio
+      uses: actions/checkout@v4
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Instalar herramientas de linting
+      run: |
+        pip install flake8 black isort
+    
+    - name: Ejecutar flake8 (verificación de estilo)
+      run: |
+        flake8 main.py test_main.py --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - name: Verificar formato con black
+      run: |
+        black --check main.py test_main.py
+    
+    - name: Verificar orden de imports con isort
+      run: |
+        isort --check-only main.py test_main.py
+
+  # Trabajo para notificaciones en caso de fallo
+  notify:
+    needs: [build, lint]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+    - name: Notificar fallo
+      run: |
+        echo "La compilación o las pruebas han fallado"
+        echo "Revisa los logs para más detalles"

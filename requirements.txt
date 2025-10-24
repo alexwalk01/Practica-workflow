@@ -1,0 +1,8 @@
+# Dependencias del proyecto para GitHub Actions
+# En este caso, solo usamos librerías estándar de Python
+# pero aquí se pueden agregar dependencias externas si es necesario
+
+# Ejemplo de dependencias que podrías necesitar:
+# requests>=2.25.1
+# numpy>=1.21.0
+# pandas>=1.3.0
