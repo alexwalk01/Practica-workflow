@@ -22,20 +22,16 @@ def main():
     print("=" * 50)
     
     # Saludo personalizado
-    nombre = input("Ingresa tu nombre: ").strip() or "Usuario"
+    nombre = "GitHub Actions"
     mensaje = saludar(nombre)
     print(f"\n{mensaje}")
     
     # Ejemplo de cálculo
     print(f"\n📊 Ejemplo de cálculo:")
-    try:
-        num1 = float(input("Ingresa el primer número: "))
-        num2 = float(input("Ingresa el segundo número: "))
-        resultado = calcular_suma(num1, num2)
-        print(f"La suma de {num1} + {num2} = {resultado}")
-    except ValueError:
-        print("❌ Error: Por favor ingresa números válidos")
-        return 1
+    num1 = 10
+    num2 = 5
+    resultado = calcular_suma(num1, num2)
+    print(f"La suma de {num1} + {num2} = {resultado}")
     
     # Información del sistema
     print(f"\n📋 Información del sistema:")
